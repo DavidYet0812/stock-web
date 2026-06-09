@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>台股盤前候選</title>
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Taiwan Stock Watch</p>
+          <h1>台股盤前候選</h1>
+        </div>
+        <button id="refreshButton" class="ghost-button" type="button">重新整理</button>
+      </header>
+
+      <section id="setupPanel" class="panel setup-panel" hidden>
+        <h2>連接 Apps Script</h2>
+        <p>貼上部署後的 Web App URL。網址只存在這台瀏覽器，不會寫進 GitHub。</p>
+        <form id="apiForm" class="api-form">
+          <label for="apiUrl">Apps Script Web App URL</label>
+          <div class="input-row">
+            <input id="apiUrl" name="apiUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+            <button type="submit">儲存</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="grid">
+        <article class="panel morning-panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Daily Candidates</p>
+              <h2>盤前十檔交易候選</h2>
+            </div>
+            <div id="morningMeta" class="meta">尚未載入</div>
+          </div>
+          <div id="candidateList" class="candidate-list"></div>
+          <div id="morningReport" class="report report-large">等待資料載入...</div>
+        </article>
+
+        <aside class="panel query-panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Stock Lookup</p>
+              <h2>個股查詢</h2>
+            </div>
+          </div>
+          <form id="stockForm" class="stock-form">
+            <label for="stockCode">股票代號</label>
+            <div class="input-row">
+              <input id="stockCode" name="stockCode" inputmode="numeric" pattern="[0-9]{4,6}" placeholder="2330">
+              <button type="submit">查詢</button>
+            </div>
+          </form>
+          <div id="stockStatus" class="meta">輸入代號後查詢即時報告</div>
+          <div id="stockReport" class="report">尚無查詢結果</div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
