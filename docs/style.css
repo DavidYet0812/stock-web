@@ -111,11 +111,19 @@ h2 {
   text-align: right;
 }
 
+.candidate-browser {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
 .candidate-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
-  margin-bottom: 16px;
+  max-height: 72vh;
+  overflow: auto;
 }
 
 .candidate-row {
@@ -136,6 +144,12 @@ h2 {
 
 .candidate-row:hover {
   border-color: var(--accent);
+}
+
+.candidate-row.is-active {
+  background: #ffffff;
+  border-color: var(--accent);
+  box-shadow: inset 4px 0 0 var(--accent);
 }
 
 .rank {
@@ -270,6 +284,14 @@ button:hover {
     grid-template-columns: 1fr;
   }
 
+  .candidate-browser {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-list {
+    max-height: none;
+  }
+
   .query-panel {
     order: -1;
   }
@@ -294,7 +316,4 @@ button:hover {
     grid-template-columns: 1fr;
   }
 
-  .candidate-list {
-    grid-template-columns: 1fr;
-  }
 }

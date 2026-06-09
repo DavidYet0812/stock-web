@@ -10,8 +10,13 @@ const candidateList = document.querySelector("#candidateList");
 const morningReport = document.querySelector("#morningReport");
 const stockForm = document.querySelector("#stockForm");
 const stockCodeInput = document.querySelector("#stockCode");
+const stockPasswordInput = document.querySelector("#stockPassword");
 const stockStatus = document.querySelector("#stockStatus");
 const stockReport = document.querySelector("#stockReport");
+
+let morningPayload = null;
+let morningSections = [];
+let selectedCandidateIndex = 0;
 
 function getApiUrl() {
   const fromQuery = new URLSearchParams(location.search).get("api");
@@ -116,9 +121,40 @@ function renderReport(target, text, emptyText) {
   );
 }
 
-function renderCandidates(metadata) {
+function buildMorningSections(message, candidates) {
+  const parts = splitReport(message);
+
+  if (parts.length === 0) {
+    return [];
+  }
+
+  const intro = parts[0] || "";
+  const stockParts = parts.slice(1);
+
+  return (candidates || []).map((candidate, index) => {
+    const detail = stockParts[index] || "";
+    const title = `${candidate.name || "-"} ${candidate.code || ""}`;
+    return [intro, title, detail].filter(Boolean).join("\n\n");
+  });
+}
+
+function showCandidateDetail(index) {
+  selectedCandidateIndex = index;
+
+  [...candidateList.querySelectorAll(".candidate-row")].forEach((row, rowIndex) => {
+    row.classList.toggle("is-active", rowIndex === selectedCandidateIndex);
+  });
+
+  const fallback = morningPayload?.message || "";
+  const text = morningSections[selectedCandidateIndex] || fallback;
+  renderReport(morningReport, text, "尚未產生盤前候選報告。");
+}
+
+function renderCandidates(metadata, message) {
   const candidates = metadata?.candidates || [];
   candidateList.replaceChildren();
+  morningSections = buildMorningSections(message, candidates);
+  selectedCandidateIndex = 0;
 
   if (candidates.length === 0) {
     const empty = document.createElement("div");
@@ -132,10 +168,9 @@ function renderCandidates(metadata) {
     const row = document.createElement("button");
     row.className = "candidate-row";
     row.type = "button";
-    row.addEventListener("click", () => {
-      stockCodeInput.value = item.code || "";
-      stockCodeInput.focus();
-    });
+    row.addEventListener("mouseenter", () => showCandidateDetail(index));
+    row.addEventListener("focus", () => showCandidateDetail(index));
+    row.addEventListener("click", () => showCandidateDetail(index));
 
     row.innerHTML = `
       <span class="rank">${index + 1}</span>
@@ -148,6 +183,8 @@ function renderCandidates(metadata) {
 
     candidateList.appendChild(row);
   });
+
+  showCandidateDetail(0);
 }
 
 function escapeHtml(value) {
@@ -164,7 +201,8 @@ async function loadMorningReport() {
     setupPanel.hidden = false;
     morningMeta.textContent = "等待 API 設定";
     morningReport.textContent = "請先貼上 Apps Script Web App URL。";
-    renderCandidates({ candidates: [] });
+    morningPayload = null;
+    renderCandidates({ candidates: [] }, "");
     return;
   }
 
@@ -179,23 +217,24 @@ async function loadMorningReport() {
       throw new Error(payload.error || "讀取失敗");
     }
 
+    morningPayload = payload;
     const count = payload.metadata?.count ?? payload.metadata?.candidates?.length ?? 0;
     morningMeta.textContent = `${payload.date || "-"} / ${count} 檔 / 更新 ${formatDateTime(payload.updatedAt)}`;
-    renderCandidates(payload.metadata);
-    renderReport(morningReport, payload.message, "尚未產生盤前候選報告。");
+    renderCandidates(payload.metadata, payload.message);
   } catch (error) {
+    morningPayload = null;
     morningMeta.textContent = "讀取失敗";
     morningReport.textContent = error.message;
-    renderCandidates({ candidates: [] });
+    renderCandidates({ candidates: [] }, "");
   }
 }
 
-async function queryStock(code) {
+async function queryStock(code, password) {
   stockStatus.textContent = `${code} 查詢中...`;
   stockReport.textContent = "正在產生個股報告，第一次查詢可能需要較久。";
 
   try {
-    const payload = await requestJsonp("stock", { code });
+    const payload = await requestJsonp("stock", { code, password });
 
     if (!payload.ok) {
       throw new Error(payload.error || "查詢失敗");
@@ -226,6 +265,7 @@ refreshButton.addEventListener("click", () => {
 stockForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const code = stockCodeInput.value.trim();
+  const password = stockPasswordInput.value.trim();
 
   if (!/^\d{4,6}$/.test(code)) {
     stockStatus.textContent = "格式錯誤";
@@ -233,7 +273,14 @@ stockForm.addEventListener("submit", (event) => {
     return;
   }
 
-  queryStock(code);
+  if (!password) {
+    stockStatus.textContent = "需要密碼";
+    stockReport.textContent = "請輸入查詢密碼後再查詢。";
+    stockPasswordInput.focus();
+    return;
+  }
+
+  queryStock(code, password);
 });
 
 apiUrlInput.value = getApiUrl();
